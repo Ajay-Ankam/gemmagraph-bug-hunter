@@ -13,7 +13,7 @@ Point it at a repo → get circular dependencies, security hotspots, dead code, 
 [![Tests](https://img.shields.io/badge/tests-31%20passing-brightgreen)](tests/test_api.py)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)](backend/requirements.txt)
 
-**[Live demo](#)** <!-- replace with your Cloudways URL --> · [Quickstart](#-quickstart) · [API](#-api-reference) · [Security](#-security-architecture)
+**[Live demo](#)** <!-- replace with your Cloudways URL --> · [GitHub](https://github.com/Ajay-Ankam/gemmagraph-bug-hunter) · [Quickstart](#-quickstart) · [API](#-api-reference) · [Security](#-security-architecture)
 
 </div>
 
@@ -161,7 +161,7 @@ flowchart LR
 ## 🚀 Quickstart
 
 ```bash
-git clone https://github.com/<you>/gemmagraph-bug-hunter.git
+git clone https://github.com/Ajay-Ankam/gemmagraph-bug-hunter.git
 cd gemmagraph-bug-hunter
 python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r backend/requirements-dev.txt

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Deploy GemmaGraph Bug Hunter on a Cloudways server (SSH as the application user).
 #
-#   git clone https://github.com/<you>/gemmagraph-bug-hunter.git && cd gemmagraph-bug-hunter
+#   git clone https://github.com/Ajay-Ankam/gemmagraph-bug-hunter.git && cd gemmagraph-bug-hunter
 #   cp .env.example .env && nano .env        # add GEMINI_API_KEY
 #   bash deploy_cloudways.sh
 #
