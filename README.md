@@ -9,8 +9,9 @@ Point it at a repo → get circular dependencies, security hotspots, dead code, 
 [![Gemma 4](https://img.shields.io/badge/Gemma%204-26B--A4B%20MoE-8b5cf6)](#track-2--best-use-of-gemma-4)
 [![Graphify](https://img.shields.io/badge/Graphify-0.9.99%20AST-06b6d4)](#track-3--best-use-of-graphify)
 [![Cloudways](https://img.shields.io/badge/Deploy-Cloudways%20%2B%20PM2-10b981)](#track-4--best-use-of-cloudways)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](backend/main.py)
-[![Tests](https://img.shields.io/badge/tests-31%20passing-brightgreen)](tests/test_api.py)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.162-009688?logo=fastapi&logoColor=white)](backend/main.py)
+[![Tests](https://img.shields.io/badge/tests-39%20passing-brightgreen)](tests)
+[![Streamlit](https://img.shields.io/badge/Streamlit-client-ff4b4b?logo=streamlit&logoColor=white)](streamlit_app/app.py)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)](backend/requirements.txt)
 
 **[Live demo](#)** <!-- replace with your Cloudways URL --> · [GitHub](https://github.com/Ajay-Ankam/gemmagraph-bug-hunter) · [Quickstart](#-quickstart) · [API](#-api-reference) · [Security](#-security-architecture)
@@ -64,7 +65,8 @@ Patch:   parameterised query for find_user()  ✔ passes `git apply --check`
 
 - **MIT-licensed** ([LICENSE](LICENSE)) bug-hunting harness: FastAPI service, web dashboard and CLI (`backend/cli.py`) with CI-friendly exit codes (`0` clean · `1` hotspots · `2` error).
 - **Reusable agent skill** at [`.claude/skills/gemmagraph-hunter/SKILL.md`](.claude/skills/gemmagraph-hunter/SKILL.md). Any AI coding agent that supports Agent Skills can run `/gemmagraph-hunter <path-or-github-url>` to get the full Graphify + Gemma audit. The skill also covers blast-radius queries (`graphify affected`) and a consent-gated `git apply --check` patch flow.
-- A **31-test suite** ([`tests/test_api.py`](tests/test_api.py)) covering the API contract, 18 injection/traversal payloads, upload validation and the graph algorithms. It runs offline, with no API key.
+- **Two interchangeable UIs on one API:** a modular HTML/Tailwind dashboard (ES modules, served by FastAPI, used in production) and an all-Python **Streamlit** app ([`streamlit_app/`](streamlit_app)) for local use or Streamlit Community Cloud.
+- A **39-test suite** ([`tests/`](tests)) covering the API contract, 18 injection/traversal payloads, upload validation, static-asset serving, the graph algorithms and headless Streamlit UI tests (`AppTest`). It runs offline, with no API key.
 
 ### Track 2 · Best Use of Gemma 4
 
@@ -83,8 +85,8 @@ Patch:   parameterised query for find_user()  ✔ passes `git apply --check`
 - **Deterministic tree-sitter AST extraction** (`--code-only`: no LLM, no API cost) produces `graph.json` + `GRAPH_REPORT.md`.
 - From that graph we compute **God Nodes** (degree ranking), **import cycles** (iterative Tarjan SCC over `EXTRACTED`/`INFERRED` dependency edges, lifted to file level), **dense communities** (Graphify clusters by edge density) and **dead code** (isolated nodes + callables with no inbound non-structural edges).
 - **We catch what the stock report misses.** On a minimal two-file cycle, Graphify's `GRAPH_REPORT.md` printed *"Import Cycles: None detected"*, while our file-level SCC found `a.py → b.py → a.py`.
-- **Token efficiency, measured with `graphify benchmark` on this repo:** 12,800 tokens naive vs ~1,485 per graph query, which is **8.6x fewer tokens**. The ratio grows with repository size, because the query cost is bounded while the corpus is not.
-- **Our own knowledge graph is committed** for inspection: [`graphify-out/GRAPH_REPORT.md`](graphify-out/GRAPH_REPORT.md) and [`graphify-out/graph.json`](graphify-out/graph.json) (192 nodes · 337 edges · 11 communities).
+- **Token efficiency, measured with `graphify benchmark` on this repo:** ~20,700 tokens naive vs ~1,490 per graph query, which is **13.9x fewer tokens**. The ratio grows with repository size, because the query cost is bounded while the corpus is not: it was 8.6x when this repo was 40% smaller.
+- **Our own knowledge graph is committed** for inspection: [`graphify-out/GRAPH_REPORT.md`](graphify-out/GRAPH_REPORT.md) and [`graphify-out/graph.json`](graphify-out/graph.json) (311 nodes · 609 edges · 13 communities).
 
 ### Track 4 · Best Use of Cloudways
 
@@ -102,7 +104,8 @@ Patch:   parameterised query for find_user()  ✔ passes `git apply --check`
 
 ```mermaid
 flowchart LR
-    U[Browser dashboard<br/>frontend/index.html] -->|HTTPS| N[Cloudways Nginx]
+    U[HTML dashboard<br/>frontend/ ES modules] -->|HTTPS| N[Cloudways Nginx]
+    ST[Streamlit app<br/>streamlit_app/] -->|REST| API
     CLI[CLI / Agent Skill<br/>/gemmagraph-hunter] --> GE
     N --> V[Varnish<br/>Cache-Control: public]
     V --> A[Apache .htaccess<br/>reverse proxy]
@@ -126,7 +129,7 @@ flowchart LR
 <summary>ASCII version</summary>
 
 ```text
- Browser / CLI / Agent Skill
+ HTML dashboard / Streamlit app / CLI / Agent Skill
           │
    Nginx → Varnish → Apache(.htaccess proxy) → PM2 → Uvicorn workers (127.0.0.1:8000)
                                                           │
@@ -152,9 +155,10 @@ flowchart LR
 | [`backend/graph_engine.py`](backend/graph_engine.py) | Target validation, cloning, Graphify runner, graph algorithms |
 | [`backend/gemma_agent.py`](backend/gemma_agent.py) | Gemma 4 audit + vision prompts (google-genai) |
 | [`backend/cli.py`](backend/cli.py) | Command-line interface used by the agent skill |
-| [`frontend/index.html`](frontend/index.html) | Tailwind dashboard (served at `/`) |
+| [`frontend/`](frontend) | HTML dashboard served at `/`: `index.html` (layout), `css/styles.css`, `js/` ES modules: `api` · `render` · `graph` · `patch` · `upload` · `dom` · `main` |
+| [`streamlit_app/`](streamlit_app) | Streamlit client: `app.py` (layout + state), `api_client.py`, `components/` (`topology`, `audit`, `patch`, `vision`) |
 | [`demo_buggy_app/`](demo_buggy_app) | Deliberately vulnerable sample (⚠️ never deploy) |
-| [`tests/test_api.py`](tests/test_api.py) | 31 offline tests |
+| [`tests/`](tests) | 39 offline tests (`test_api.py`, `test_streamlit_app.py`) |
 
 ---
 
@@ -180,10 +184,20 @@ python backend/cli.py ~/code/my-project --graph-only    # structure only, no API
 python backend/cli.py https://github.com/owner/repo --json --patch-out fix.patch
 ```
 
+**Streamlit app** (optional all-Python UI, same backend)
+
+```bash
+pip install -r streamlit_app/requirements.txt
+# keep uvicorn running on :8000, then in a second terminal:
+streamlit run streamlit_app/app.py --server.address 127.0.0.1   # → http://localhost:8501
+```
+
+Point it at a deployed backend with `GEMMAGRAPH_API_URL=https://your-app.example.com`, or change the URL in its sidebar. Production on Cloudways uses the HTML dashboard: it is a single process, its pages can be cached by Varnish, and it needs no WebSocket proxying.
+
 **Tests**
 
 ```bash
-python -m pytest            # 31 passed, offline
+python -m pytest            # 39 passed, offline
 ```
 
 ### Cloudways deployment
@@ -272,7 +286,7 @@ The service runs untrusted input (URLs, uploads and **the scanned code itself**)
 | Malicious uploads | MIME allowlist (PNG/JPEG/WebP), 5 MB cap (read is bounded), **magic-byte signature check** against the declared type | `main._validate_image` |
 | Information leakage | Global exception handlers return `{"error","status"}` only; tracebacks are logged server-side; model/API error details are not echoed | `main.py` handlers |
 | Prompt injection from scanned repos | The prompt marks source and report as untrusted data and asks for embedded instructions to be reported as findings | `gemma_agent.audit_code_graph` |
-| XSS from model output | Dashboard escapes all values; Markdown is rendered through DOMPurify | `frontend/index.html` |
+| XSS from model output | HTML dashboard escapes all values and renders Markdown through DOMPurify; Streamlit never enables `unsafe_allow_html` | `frontend/js/dom.js`, `streamlit_app/` |
 | Secret exposure | `.env` git-ignored (`.env.*` too, except `.env.example`); `chmod 600 .env` on deploy; Uvicorn bound to `127.0.0.1` behind the proxy; committed cache/graph files verified free of keys and absolute paths | `.gitignore`, `deploy_cloudways.sh` |
 
 Coverage: `tests/test_api.py` fires 18 malicious targets (`; rm -rf /`, `$(…)`, backticks, `../../etc/passwd`, `file://`, `ssh`, `--upload-pack=…`, credential URLs, …) plus spoofed, oversized and disallowed uploads, and asserts that no traceback ever leaks.

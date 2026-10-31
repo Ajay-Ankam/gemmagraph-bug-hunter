@@ -39,3 +39,6 @@ users.db
 .idea/
 .DS_Store
 Thumbs.db
+
+# Streamlit secrets
+.streamlit/secrets.toml

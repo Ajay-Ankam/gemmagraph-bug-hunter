@@ -1,0 +1,14 @@
+[theme]
+base = "dark"
+primaryColor = "#8b5cf6"
+backgroundColor = "#0a0d14"
+secondaryBackgroundColor = "#111622"
+textColor = "#e2e8f0"
+
+[server]
+# Mirrors the backend's 5 MB upload limit.
+maxUploadSize = 5
+headless = true
+
+[browser]
+gatherUsageStats = false

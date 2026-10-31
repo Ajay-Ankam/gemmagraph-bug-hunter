@@ -28,13 +28,17 @@ from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
+from starlette.responses import Response
+from starlette.types import Scope
 
 BACKEND_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BACKEND_DIR.parent
-FRONTEND_INDEX = PROJECT_ROOT / "frontend" / "index.html"
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
+FRONTEND_INDEX = FRONTEND_DIR / "index.html"
 CACHE_FILE = Path(os.getenv("SCAN_CACHE_FILE", BACKEND_DIR / ".scan_cache.json"))
 
 try:  # load GEMINI_API_KEY from the project-level .env when running locally
@@ -75,6 +79,19 @@ app = FastAPI(
     description="Graphify AST knowledge graphs + Gemma 4 code-review agent.",
     version="1.0.0",
 )
+
+class CachedStaticFiles(StaticFiles):
+    """StaticFiles that adds ``Cache-Control`` so Varnish/browsers cache the dashboard assets."""
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            response.headers.update(CACHED_HEADERS)
+        return response
+
+
+# Dashboard assets: /static/css/*.css, /static/js/*.js (ES modules).
+app.mount("/static", CachedStaticFiles(directory=FRONTEND_DIR, check_dir=False), name="static")
 
 app.add_middleware(
     CORSMiddleware,

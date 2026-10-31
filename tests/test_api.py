@@ -48,6 +48,25 @@ def test_dashboard_is_served() -> None:
     res = client.get("/")
     assert res.status_code == 200
     assert "GemmaGraph Bug Hunter" in res.text
+    assert '<script type="module" src="/static/js/main.js">' in res.text
+
+
+@pytest.mark.parametrize(
+    "path, content_type",
+    [("/static/js/main.js", "javascript"), ("/static/js/render.js", "javascript"), ("/static/css/styles.css", "text/css")],
+)
+def test_dashboard_assets_are_served_and_cacheable(path: str, content_type: str) -> None:
+    res = client.get(path)
+    assert res.status_code == 200
+    assert content_type in res.headers["content-type"]
+    assert res.headers["cache-control"] == "public, max-age=300"
+
+
+def test_static_mount_blocks_traversal() -> None:
+    res = client.get("/static/../backend/main.py")
+    assert res.status_code == 404
+    res = client.get("/static/%2e%2e/.env")
+    assert res.status_code == 404
 
 
 # --------------------------------------------------------------------------- #

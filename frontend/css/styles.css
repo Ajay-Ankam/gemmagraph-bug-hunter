@@ -1,0 +1,19 @@
+/* GemmaGraph Bug Hunter dashboard: custom styles on top of Tailwind. */
+
+body { background: #0a0d14; }
+.panel { background: #111622; border: 1px solid #1e2636; border-radius: 14px; }
+.panel-h { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #8391a7; font-weight: 600; }
+.prose-dark { color: #c9d3e2; font-size: 13px; line-height: 1.6; }
+.prose-dark h1, .prose-dark h2, .prose-dark h3 { color: #f1f5f9; font-weight: 600; margin: 1em 0 .4em; }
+.prose-dark h1 { font-size: 16px; } .prose-dark h2 { font-size: 14px; } .prose-dark h3 { font-size: 13px; }
+.prose-dark ul, .prose-dark ol { padding-left: 1.2em; margin: .4em 0; } .prose-dark ul { list-style: disc; } .prose-dark ol { list-style: decimal; }
+.prose-dark code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #1a2131; padding: 1px 5px; border-radius: 4px; color: #a5d6ff; }
+.prose-dark strong { color: #f1f5f9; }
+.prose-dark p { margin: .45em 0; }
+.scroll-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+.scroll-thin::-webkit-scrollbar-thumb { background: #263043; border-radius: 8px; }
+.diff-line { white-space: pre; padding: 0 12px; min-height: 1.45em; }
+.spinner { width: 16px; height: 16px; border: 2px solid #ffffff40; border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.node { cursor: pointer; transition: opacity .15s; }
+.dim { opacity: .15; }

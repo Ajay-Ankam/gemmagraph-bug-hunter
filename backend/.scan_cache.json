@@ -326,7 +326,7 @@
    "graphify": 3442.8
   }
  },
- "3a52ce780950": {
+ "2faab8d87673": {
   "audit": {
    "circular_dependencies": [
     {
@@ -335,46 +335,46 @@
       "demo_buggy_app/db.py",
       "demo_buggy_app/auth.py"
      ],
-     "fix": "Move the shared logic (like password hashing or user models) into a third, independent utility module that both auth and db can import.",
-     "impact": "Prevents clean module initialization and makes unit testing individual components impossible due to tight coupling."
+     "fix": "Move shared logic (like password hashing or user models) to a third 'common' or 'models' module that both auth and db can import without referencing each other.",
+     "impact": "Prevents clean module initialization and can cause runtime ImportErrors or unexpected behavior during testing."
     }
    ],
    "dead_code": [
     {
-     "confidence": "medium",
+     "confidence": "high",
      "file": "tests/test_api.py",
-     "reason": "It is a pytest fixture used by other tests, but the graph identifies it as an unreferenced callable in the context of the main application flow.",
+     "reason": "Identified as an unreferenced callable in the graph analysis.",
      "symbol": "demo_scan()"
     },
     {
-     "confidence": "low",
+     "confidence": "high",
      "file": "backend/main.py",
      "reason": "Listed as unreferenced in the graph analysis.",
      "symbol": "index()"
     },
     {
      "confidence": "high",
-     "file": "demo_buggy_app/legacy_utils.py",
-     "reason": "Identified as unreferenced in the graph.",
-     "symbol": "format_username()"
+     "file": "backend/main.py",
+     "reason": "Listed as unreferenced in the graph analysis.",
+     "symbol": "get_scan()"
     },
     {
      "confidence": "high",
-     "file": "demo_buggy_app/legacy_utils.py",
-     "reason": "Identified as unreferenced in the graph.",
-     "symbol": "load_legacy_session()"
+     "file": "backend/main.py",
+     "reason": "Listed as unreferenced in the graph analysis.",
+     "symbol": "health()"
     },
     {
      "confidence": "high",
-     "file": "demo_buggy_app/legacy_utils.py",
-     "reason": "Identified as unreferenced in the graph.",
-     "symbol": "old_password_check()"
+     "file": "backend/main.py",
+     "reason": "Listed as unreferenced in the graph analysis.",
+     "symbol": "multimodal_audit()"
     },
     {
      "confidence": "high",
-     "file": "tests/test_api.py",
-     "reason": "Identified as unreferenced in the graph.",
-     "symbol": "node()"
+     "file": "backend/graph_engine.py",
+     "reason": "Listed as unreferenced in the graph analysis.",
+     "symbol": "node_view()"
     }
    ],
    "git_diff_patch": "",
@@ -384,15 +384,15 @@
     {
      "file": "demo_buggy_app/auth.py",
      "rank": 1,
-     "reason": "Circular dependencies cause runtime instability and architectural rot.",
+     "reason": "The circular dependency between auth and db is a structural flaw that complicates testing and deployment.",
      "title": "Break circular dependency in demo_buggy_app"
     }
    ],
    "security_hotspots": [],
-   "summary": "The architecture is generally robust with strong input validation in the graph engine, but it contains a critical circular dependency in the demo application. The core backend uses a well-defined security boundary for target validation, though some dead code exists in the test suite and legacy utilities.",
+   "summary": "The architecture is generally robust with strong input validation boundaries, but contains a critical circular dependency in the demo application. The core backend uses a well-defined god-node pattern for graph processing, though some error handlers and utility functions appear unreferenced.",
    "usage": {
-    "input_tokens": 10494,
-    "output_tokens": 659,
+    "input_tokens": 10558,
+    "output_tokens": 629,
     "thinking_tokens": 0
    }
   },
@@ -774,13 +774,670 @@
    }
   },
   "model": "gemma-4-26b-a4b-it",
-  "repo": ".",
-  "report_md": "# Graph Report - gemmagraph-bug-hunter  (2026-10-31)\n\n## Corpus Check\n- cluster-only mode \u2014 file stats not available\n\n## Summary\n- 192 nodes \u00b7 337 edges \u00b7 11 communities (8 shown, 3 thin omitted)\n- Extraction: 97% EXTRACTED \u00b7 3% INFERRED \u00b7 0% AMBIGUOUS \u00b7 INFERRED: 11 edges (avg confidence: 0.91)\n- Token cost: 0 input \u00b7 0 output\n\n## Community Hubs (Navigation)\n- Community 0\n- Community 1\n- Community 2\n- Community 3\n- Community 4\n- Community 5\n- Community 6\n- Community 7\n- Community 8\n- Community 9\n- Community 10\n\n## God Nodes (most connected - your core abstractions)\n1. `scan()` - 15 edges\n2. `analyze_repo_graph()` - 15 edges\n3. `GraphEngineError` - 11 edges\n4. `validate_target()` - 11 edges\n5. `InvalidTargetError` - 9 edges\n6. `health()` - 9 edges\n7. `summarize_graph()` - 9 edges\n8. `main()` - 9 edges\n9. `ScanTarget` - 8 edges\n10. `multimodal_audit()` - 8 edges\n\n## Surprising Connections (you probably didn't know these)\n- `test_unexpected_errors_return_clean_json()` --indirect_call--> `main()`  [INFERRED]\n  tests/test_api.py \u2192 backend/cli.py\n- `test_validate_target_accepts_only_allowlist()` --uses--> `InvalidTargetError`  [INFERRED]\n  tests/test_api.py \u2192 backend/graph_engine.py\n- `test_validate_target_accepts_only_allowlist()` --calls--> `validate_target()`  [INFERRED]\n  tests/test_api.py \u2192 backend/graph_engine.py\n- `test_summarize_graph_finds_cycle_god_node_and_dead_code()` --calls--> `summarize_graph()`  [INFERRED]\n  tests/test_api.py \u2192 backend/graph_engine.py\n- `main()` --uses--> `GraphEngineError`  [INFERRED]\n  backend/cli.py \u2192 backend/graph_engine.py\n\n## Import Cycles\n- 2-file cycle: `demo_buggy_app/auth.py -> demo_buggy_app/db.py -> demo_buggy_app/auth.py`\n\n## Communities (11 total, 3 thin omitted)\n\n### Community 0 - \"Community 0\"\nCohesion: 0.08\nNodes (13): analyze_repo_graph(), _clone_repo(), _find_cycle_path(), _fingerprint(), _git_head(), GraphEngineError, _graphify_cmd(), read_critical_files() (+5 more)\n\n### Community 1 - \"Community 1\"\nCohesion: 0.08\nNodes (9): _get_cached(), get_scan(), _graphify_status(), health(), index(), _load_cache(), multimodal_audit(), _store() (+1 more)\n\n### Community 2 - \"Community 2\"\nCohesion: 0.09\nNodes (3): demo_scan(), test_malicious_scan_targets_are_rejected(), test_unexpected_errors_return_clean_json()\n\n### Community 3 - \"Community 3\"\nCohesion: 0.16\nNodes (6): audit_architecture_diagram(), audit_code_graph(), _compact_summary(), _extract_json(), _generate(), get_client()\n\n### Community 4 - \"Community 4\"\nCohesion: 0.21\nNodes (5): _error(), http_exception_handler(), invalid_target_handler(), unhandled_exception_handler(), validation_exception_handler()\n\n### Community 5 - \"Community 5\"\nCohesion: 0.23\nNodes (8): _scan_id(), admin_backup(), hash_password(), login(), backup_database(), create_user(), find_user(), get_connection()\n\n### Community 6 - \"Community 6\"\nCohesion: 0.18\nNodes (6): InvalidTargetError, ScanTarget, validate_target(), scan(), ScanRequest, test_validate_target_accepts_only_allowlist()\n\n### Community 9 - \"Community 9\"\nCohesion: 0.83\nNodes (3): fail(), log(), deploy_cloudways.sh script\n\n## Knowledge Gaps\n- **3 thin communities (<3 nodes) omitted from report** \u2014 run `graphify query` to explore isolated nodes.\n\n## Suggested Questions\n_Questions this graph is uniquely positioned to answer:_\n\n- **Why does `analyze_repo_graph()` connect `Community 0` to `Community 1`, `Community 6`, `Community 7`?**\n  _High betweenness centrality (0.055) - this node is a cross-community bridge._\n- **Are the 3 inferred relationships involving `scan()` (e.g. with `GraphEngineError` and `InvalidTargetError`) actually correct?**\n  _`scan()` has 3 INFERRED edges - model-reasoned connections that need verification._\n- **Should `Community 0` be split into smaller, more focused modules?**\n  _Cohesion score 0.08097165991902834 - nodes in this community are weakly interconnected._\n- **Why does `scan()` connect `Community 6` to `Community 0`, `Community 1`, `Community 3`, `Community 4`, `Community 5`?**\n  _High betweenness centrality (0.050) - this node is a cross-community bridge._\n- **Are the 2 inferred relationships involving `GraphEngineError` (e.g. with `main()` and `scan()`) actually correct?**\n  _`GraphEngineError` has 2 INFERRED edges - model-reasoned connections that need verification._\n- **Should `Community 1` be split into smaller, more focused modules?**\n  _Cohesion score 0.07823613086770982 - nodes in this community are weakly interconnected._\n- **Why does `validate_target()` connect `Community 6` to `Community 0`, `Community 1`, `Community 7`?**\n  _High betweenness centrality (0.041) - this node is a cross-community bridge._",
-  "scan_id": "3a52ce780950",
-  "scanned_at": 1793430403,
+  "repo": "https://github.com/ajay-ankam/gemmagraph-bug-hunter",
+  "report_md": "# Graph Report - ajay-ankam__gemmagraph-bug-hunter  (2026-10-31)\n\n## Corpus Check\n- cluster-only mode \u2014 file stats not available\n\n## Summary\n- 192 nodes \u00b7 337 edges \u00b7 11 communities (8 shown, 3 thin omitted)\n- Extraction: 97% EXTRACTED \u00b7 3% INFERRED \u00b7 0% AMBIGUOUS \u00b7 INFERRED: 11 edges (avg confidence: 0.91)\n- Token cost: 0 input \u00b7 0 output\n\n## Graph Freshness\n- Built from commit: `c13d86a4`\n- Run `git rev-parse HEAD` and compare to check if the graph is stale.\n- Run `graphify update .` after code changes (no API cost).\n\n## Community Hubs (Navigation)\n- Community 0\n- Community 1\n- Community 2\n- Community 3\n- Community 4\n- Community 5\n- Community 6\n- Community 7\n- Community 8\n- Community 9\n- Community 10\n\n## God Nodes (most connected - your core abstractions)\n1. `scan()` - 15 edges\n2. `analyze_repo_graph()` - 15 edges\n3. `GraphEngineError` - 11 edges\n4. `validate_target()` - 11 edges\n5. `InvalidTargetError` - 9 edges\n6. `health()` - 9 edges\n7. `summarize_graph()` - 9 edges\n8. `main()` - 9 edges\n9. `ScanTarget` - 8 edges\n10. `multimodal_audit()` - 8 edges\n\n## Surprising Connections (you probably didn't know these)\n- `test_unexpected_errors_return_clean_json()` --indirect_call--> `main()`  [INFERRED]\n  tests/test_api.py \u2192 backend/cli.py\n- `test_validate_target_accepts_only_allowlist()` --uses--> `InvalidTargetError`  [INFERRED]\n  tests/test_api.py \u2192 backend/graph_engine.py\n- `test_validate_target_accepts_only_allowlist()` --calls--> `validate_target()`  [INFERRED]\n  tests/test_api.py \u2192 backend/graph_engine.py\n- `test_summarize_graph_finds_cycle_god_node_and_dead_code()` --calls--> `summarize_graph()`  [INFERRED]\n  tests/test_api.py \u2192 backend/graph_engine.py\n- `main()` --uses--> `GraphEngineError`  [INFERRED]\n  backend/cli.py \u2192 backend/graph_engine.py\n\n## Import Cycles\n- 2-file cycle: `demo_buggy_app/auth.py -> demo_buggy_app/db.py -> demo_buggy_app/auth.py`\n\n## Communities (11 total, 3 thin omitted)\n\n### Community 0 - \"Community 0\"\nCohesion: 0.08\nNodes (13): analyze_repo_graph(), _clone_repo(), _find_cycle_path(), _fingerprint(), _git_head(), GraphEngineError, _graphify_cmd(), read_critical_files() (+5 more)\n\n### Community 1 - \"Community 1\"\nCohesion: 0.08\nNodes (9): _get_cached(), get_scan(), _graphify_status(), health(), index(), _load_cache(), multimodal_audit(), _store() (+1 more)\n\n### Community 2 - \"Community 2\"\nCohesion: 0.09\nNodes (3): demo_scan(), test_malicious_scan_targets_are_rejected(), test_unexpected_errors_return_clean_json()\n\n### Community 3 - \"Community 3\"\nCohesion: 0.16\nNodes (6): audit_architecture_diagram(), audit_code_graph(), _compact_summary(), _extract_json(), _generate(), get_client()\n\n### Community 4 - \"Community 4\"\nCohesion: 0.21\nNodes (5): _error(), http_exception_handler(), invalid_target_handler(), unhandled_exception_handler(), validation_exception_handler()\n\n### Community 5 - \"Community 5\"\nCohesion: 0.23\nNodes (8): _scan_id(), admin_backup(), hash_password(), login(), backup_database(), create_user(), find_user(), get_connection()\n\n### Community 6 - \"Community 6\"\nCohesion: 0.18\nNodes (6): InvalidTargetError, ScanTarget, validate_target(), scan(), ScanRequest, test_validate_target_accepts_only_allowlist()\n\n### Community 9 - \"Community 9\"\nCohesion: 0.83\nNodes (3): fail(), log(), deploy_cloudways.sh script\n\n## Knowledge Gaps\n- **3 thin communities (<3 nodes) omitted from report** \u2014 run `graphify query` to explore isolated nodes.\n\n## Suggested Questions\n_Questions this graph is uniquely positioned to answer:_\n\n- **Why does `analyze_repo_graph()` connect `Community 0` to `Community 1`, `Community 6`, `Community 7`?**\n  _High betweenness centrality (0.055) - this node is a cross-community bridge._\n- **Are the 3 inferred relationships involving `scan()` (e.g. with `GraphEngineError` and `InvalidTargetError`) actually correct?**\n  _`scan()` has 3 INFERRED edges - model-reasoned connections that need verification._\n- **Should `Community 0` be split into smaller, more focused modules?**\n  _Cohesion score 0.08097165991902834 - nodes in this community are weakly interconnected._\n- **Why does `scan()` connect `Community 6` to `Community 0`, `Community 1`, `Community 3`, `Community 4`, `Community 5`?**\n  _High betweenness centrality (0.050) - this node is a cross-community bridge._\n- **Are the 2 inferred relationships involving `GraphEngineError` (e.g. with `main()` and `scan()`) actually correct?**\n  _`GraphEngineError` has 2 INFERRED edges - model-reasoned connections that need verification._\n- **Should `Community 1` be split into smaller, more focused modules?**\n  _Cohesion score 0.07823613086770982 - nodes in this community are weakly interconnected._\n- **Why does `validate_target()` connect `Community 6` to `Community 0`, `Community 1`, `Community 7`?**\n  _High betweenness centrality (0.041) - this node is a cross-community bridge._",
+  "scan_id": "2faab8d87673",
+  "scanned_at": 1793433068,
   "timings_ms": {
-   "gemma": 16604.8,
-   "graphify": 3020.5
+   "gemma": 15854.9,
+   "graphify": 5817.2
+  }
+ },
+ "3a52ce780950": {
+  "audit": {
+   "circular_dependencies": [
+    {
+     "cycle": [
+      "demo_buggy_app/auth.py",
+      "demo_buggy_app/db.py",
+      "demo_buggy_app/auth.py"
+     ],
+     "fix": "Move shared logic (like password hashing) to a third utility module that both auth.py and db.py can import.",
+     "impact": "Prevents clean module initialization and can lead to runtime errors during import-time execution."
+    }
+   ],
+   "dead_code": [
+    {
+     "confidence": "medium",
+     "file": "backend/main.py",
+     "reason": "Listed as unreferenced in graph analysis despite being used for mounting.",
+     "symbol": "CachedStaticFiles()"
+    },
+    {
+     "confidence": "high",
+     "file": "tests/test_api.py",
+     "reason": "Unreferenced callable in the test suite.",
+     "symbol": "demo_scan()"
+    },
+    {
+     "confidence": "high",
+     "file": "demo_buggy_app/legacy_utils.py",
+     "reason": "Explicitly identified as unreferenced in the graph.",
+     "symbol": "load_legacy_session()"
+    }
+   ],
+   "git_diff_patch": "",
+   "health_score": 72,
+   "model": "gemma-4-26b-a4b-it",
+   "prioritized_fixes": [
+    {
+     "file": "demo_buggy_app/auth.py",
+     "rank": 1,
+     "reason": "Highest severity security finding that allows unauthorized administrative actions.",
+     "title": "Fix Broken Access Control in admin_backup"
+    }
+   ],
+   "security_hotspots": [
+    {
+     "blast_radius": [
+      "demo_buggy_app/db.py"
+     ],
+     "category": "broken access control",
+     "explanation": "The admin_backup function is called without verifying if the current user has administrative privileges.",
+     "file": "demo_buggy_app/auth.py",
+     "line": 28,
+     "severity": "critical"
+    }
+   ],
+   "summary": "The architecture shows a strong separation between the FastAPI backend and the Graphify engine, but contains a critical circular dependency in the demo application. While the core engine implements robust input validation to prevent injection, the demo code contains intentional security vulnerabilities for testing purposes.",
+   "usage": {
+    "input_tokens": 10959,
+    "output_tokens": 568,
+    "thinking_tokens": 0
+   }
+  },
+  "critical_files": [
+   "backend/main.py",
+   "backend/graph_engine.py",
+   "tests/test_api.py"
+  ],
+  "graph_summary": {
+   "circular_dependencies": [
+    {
+     "cycle": [
+      "demo_buggy_app/auth.py",
+      "demo_buggy_app/db.py",
+      "demo_buggy_app/auth.py"
+     ],
+     "evidence": [
+      {
+       "confidence": "EXTRACTED",
+       "from": "admin_backup()",
+       "location": "demo_buggy_app/auth.py:L28",
+       "relation": "calls",
+       "to": "backup_database()"
+      },
+      {
+       "confidence": "EXTRACTED",
+       "from": "create_user()",
+       "location": "demo_buggy_app/db.py:L34",
+       "relation": "calls",
+       "to": "hash_password()"
+      }
+     ],
+     "files": [
+      "demo_buggy_app/auth.py",
+      "demo_buggy_app/db.py"
+     ],
+     "size": 2
+    }
+   ],
+   "critical_files": [
+    "backend/main.py",
+    "backend/graph_engine.py",
+    "tests/test_api.py",
+    "frontend/js/dom.js",
+    "streamlit_app/app.py",
+    "frontend/js/main.js",
+    "frontend/js/render.js",
+    "frontend/js/graph.js",
+    "frontend/js/patch.js",
+    "frontend/js/upload.js"
+   ],
+   "dead_code": {
+    "isolated_count": 0,
+    "isolated_nodes": [],
+    "unreferenced_callables": [
+     {
+      "community": 8,
+      "degree": 4,
+      "id": "backend_main_cachedstaticfiles",
+      "label": "CachedStaticFiles",
+      "source_file": "backend/main.py",
+      "source_location": "L83"
+     },
+     {
+      "community": 4,
+      "degree": 3,
+      "id": "tests_test_api_demo_scan",
+      "label": "demo_scan()",
+      "source_file": "tests/test_api.py",
+      "source_location": "L24"
+     },
+     {
+      "community": 5,
+      "degree": 5,
+      "id": "tests_test_streamlit_app_fake_backend",
+      "label": "fake_backend()",
+      "source_file": "tests/test_streamlit_app.py",
+      "source_location": "L38"
+     },
+     {
+      "community": 0,
+      "degree": 4,
+      "id": "backend_main_index",
+      "label": "index()",
+      "source_file": "backend/main.py",
+      "source_location": "L222"
+     },
+     {
+      "community": 0,
+      "degree": 5,
+      "id": "backend_main_get_scan",
+      "label": "get_scan()",
+      "source_file": "backend/main.py",
+      "source_location": "L324"
+     },
+     {
+      "community": 0,
+      "degree": 9,
+      "id": "backend_main_health",
+      "label": "health()",
+      "source_file": "backend/main.py",
+      "source_location": "L239"
+     },
+     {
+      "community": 0,
+      "degree": 7,
+      "id": "backend_main_http_exception_handler",
+      "label": "http_exception_handler()",
+      "source_file": "backend/main.py",
+      "source_location": "L119"
+     },
+     {
+      "community": 0,
+      "degree": 7,
+      "id": "backend_main_invalid_target_handler",
+      "label": "invalid_target_handler()",
+      "source_file": "backend/main.py",
+      "source_location": "L136"
+     },
+     {
+      "community": 0,
+      "degree": 8,
+      "id": "backend_main_multimodal_audit",
+      "label": "multimodal_audit()",
+      "source_file": "backend/main.py",
+      "source_location": "L350"
+     },
+     {
+      "community": 0,
+      "degree": 12,
+      "id": "backend_main_scan",
+      "label": "scan()",
+      "source_file": "backend/main.py",
+      "source_location": "L267"
+     },
+     {
+      "community": 0,
+      "degree": 7,
+      "id": "backend_main_unhandled_exception_handler",
+      "label": "unhandled_exception_handler()",
+      "source_file": "backend/main.py",
+      "source_location": "L142"
+     },
+     {
+      "community": 0,
+      "degree": 7,
+      "id": "backend_main_validation_exception_handler",
+      "label": "validation_exception_handler()",
+      "source_file": "backend/main.py",
+      "source_location": "L125"
+     },
+     {
+      "community": 8,
+      "degree": 3,
+      "id": "backend_main_cachedstaticfiles_get_response",
+      "label": ".get_response()",
+      "source_file": "backend/main.py",
+      "source_location": "L86"
+     },
+     {
+      "community": 2,
+      "degree": 1,
+      "id": "backend_graph_engine_summarize_graph_node_view",
+      "label": "node_view()",
+      "source_file": "backend/graph_engine.py",
+      "source_location": "L369"
+     },
+     {
+      "community": 2,
+      "degree": 4,
+      "id": "backend_main_scanrequest_check_target",
+      "label": "._check_target()",
+      "source_file": "backend/main.py",
+      "source_location": "L208"
+     },
+     {
+      "community": 3,
+      "degree": 7,
+      "id": "frontend_js_main_init",
+      "label": "init()",
+      "source_file": "frontend/js/main.js",
+      "source_location": "L50"
+     },
+     {
+      "community": 4,
+      "degree": 1,
+      "id": "tests_test_api_test_summarize_graph_finds_cycle_god_node_and_dead_code_edge",
+      "label": "edge()",
+      "source_file": "tests/test_api.py",
+      "source_location": "L210"
+     },
+     {
+      "community": 4,
+      "degree": 1,
+      "id": "tests_test_api_test_summarize_graph_finds_cycle_god_node_and_dead_code_node",
+      "label": "node()",
+      "source_file": "tests/test_api.py",
+      "source_location": "L207"
+     },
+     {
+      "community": 6,
+      "degree": 5,
+      "id": "backend_gemma_agent_audit_architecture_diagram",
+      "label": "audit_architecture_diagram()",
+      "source_file": "backend/gemma_agent.py",
+      "source_location": "L212"
+     },
+     {
+      "community": 7,
+      "degree": 2,
+      "id": "demo_buggy_app_auth_admin_backup",
+      "label": "admin_backup()",
+      "source_file": "demo_buggy_app/auth.py",
+      "source_location": "L26"
+     },
+     {
+      "community": 7,
+      "degree": 3,
+      "id": "demo_buggy_app_auth_login",
+      "label": "login()",
+      "source_file": "demo_buggy_app/auth.py",
+      "source_location": "L19"
+     },
+     {
+      "community": 7,
+      "degree": 3,
+      "id": "demo_buggy_app_db_create_user",
+      "label": "create_user()",
+      "source_file": "demo_buggy_app/db.py",
+      "source_location": "L30"
+     },
+     {
+      "community": 9,
+      "degree": 1,
+      "id": "demo_buggy_app_legacy_utils_format_username",
+      "label": "format_username()",
+      "source_file": "demo_buggy_app/legacy_utils.py",
+      "source_location": "L9"
+     },
+     {
+      "community": 9,
+      "degree": 2,
+      "id": "demo_buggy_app_legacy_utils_load_legacy_session",
+      "label": "load_legacy_session()",
+      "source_file": "demo_buggy_app/legacy_utils.py",
+      "source_location": "L13"
+     },
+     {
+      "community": 9,
+      "degree": 1,
+      "id": "demo_buggy_app_legacy_utils_old_password_check",
+      "label": "old_password_check()",
+      "source_file": "demo_buggy_app/legacy_utils.py",
+      "source_location": "L19"
+     }
+    ],
+    "unreferenced_count": 25
+   },
+   "dense_clusters": [
+    {
+     "community": 10,
+     "density": 0.167,
+     "files": [
+      "deploy_cloudways.sh"
+     ],
+     "internal_edges": 2,
+     "name": "Community 10",
+     "size": 4
+    }
+   ],
+   "file_graph": {
+    "edges": [
+     {
+      "in_cycle": false,
+      "source": "backend/cli.py",
+      "target": "backend/graph_engine.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "backend/main.py",
+      "target": "backend/gemma_agent.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "backend/main.py",
+      "target": "backend/graph_engine.py"
+     },
+     {
+      "in_cycle": true,
+      "source": "demo_buggy_app/auth.py",
+      "target": "demo_buggy_app/db.py"
+     },
+     {
+      "in_cycle": true,
+      "source": "demo_buggy_app/db.py",
+      "target": "demo_buggy_app/auth.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "frontend/js/graph.js",
+      "target": "frontend/js/dom.js"
+     },
+     {
+      "in_cycle": false,
+      "source": "frontend/js/main.js",
+      "target": "frontend/js/api.js"
+     },
+     {
+      "in_cycle": false,
+      "source": "frontend/js/main.js",
+      "target": "frontend/js/dom.js"
+     },
+     {
+      "in_cycle": false,
+      "source": "frontend/js/main.js",
+      "target": "frontend/js/graph.js"
+     },
+     {
+      "in_cycle": false,
+      "source": "frontend/js/main.js",
+      "target": "frontend/js/patch.js"
+     },
+     {
+      "in_cycle": false,
+      "source": "frontend/js/main.js",
+      "target": "frontend/js/render.js"
+     },
+     {
+      "in_cycle": false,
+      "source": "frontend/js/main.js",
+      "target": "frontend/js/upload.js"
+     },
+     {
+      "in_cycle": false,
+      "source": "frontend/js/patch.js",
+      "target": "frontend/js/dom.js"
+     },
+     {
+      "in_cycle": false,
+      "source": "frontend/js/render.js",
+      "target": "frontend/js/dom.js"
+     },
+     {
+      "in_cycle": false,
+      "source": "frontend/js/render.js",
+      "target": "frontend/js/graph.js"
+     },
+     {
+      "in_cycle": false,
+      "source": "frontend/js/render.js",
+      "target": "frontend/js/patch.js"
+     },
+     {
+      "in_cycle": false,
+      "source": "frontend/js/upload.js",
+      "target": "frontend/js/api.js"
+     },
+     {
+      "in_cycle": false,
+      "source": "frontend/js/upload.js",
+      "target": "frontend/js/dom.js"
+     },
+     {
+      "in_cycle": false,
+      "source": "streamlit_app/app.py",
+      "target": "streamlit_app/api_client.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "streamlit_app/app.py",
+      "target": "streamlit_app/components/audit.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "streamlit_app/app.py",
+      "target": "streamlit_app/components/patch.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "streamlit_app/app.py",
+      "target": "streamlit_app/components/topology.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "streamlit_app/app.py",
+      "target": "streamlit_app/components/vision.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "streamlit_app/components/vision.py",
+      "target": "streamlit_app/api_client.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "tests/test_api.py",
+      "target": "backend/graph_engine.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "tests/test_api.py",
+      "target": "streamlit_app/app.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "tests/test_streamlit_app.py",
+      "target": "streamlit_app/api_client.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "tests/test_streamlit_app.py",
+      "target": "streamlit_app/components/topology.py"
+     }
+    ],
+    "nodes": [
+     {
+      "degree": 1,
+      "id": "backend/cli.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 1,
+      "id": "backend/gemma_agent.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 3,
+      "id": "backend/graph_engine.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 2,
+      "id": "backend/main.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 2,
+      "id": "demo_buggy_app/auth.py",
+      "in_cycle": true
+     },
+     {
+      "degree": 2,
+      "id": "demo_buggy_app/db.py",
+      "in_cycle": true
+     },
+     {
+      "degree": 2,
+      "id": "frontend/js/api.js",
+      "in_cycle": false
+     },
+     {
+      "degree": 5,
+      "id": "frontend/js/dom.js",
+      "in_cycle": false
+     },
+     {
+      "degree": 3,
+      "id": "frontend/js/graph.js",
+      "in_cycle": false
+     },
+     {
+      "degree": 6,
+      "id": "frontend/js/main.js",
+      "in_cycle": false
+     },
+     {
+      "degree": 3,
+      "id": "frontend/js/patch.js",
+      "in_cycle": false
+     },
+     {
+      "degree": 4,
+      "id": "frontend/js/render.js",
+      "in_cycle": false
+     },
+     {
+      "degree": 3,
+      "id": "frontend/js/upload.js",
+      "in_cycle": false
+     },
+     {
+      "degree": 3,
+      "id": "streamlit_app/api_client.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 6,
+      "id": "streamlit_app/app.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 1,
+      "id": "streamlit_app/components/audit.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 1,
+      "id": "streamlit_app/components/patch.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 2,
+      "id": "streamlit_app/components/topology.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 2,
+      "id": "streamlit_app/components/vision.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 2,
+      "id": "tests/test_api.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 2,
+      "id": "tests/test_streamlit_app.py",
+      "in_cycle": false
+     }
+    ]
+   },
+   "god_nodes": [
+    {
+     "community": 0,
+     "degree": 48,
+     "id": "backend_main",
+     "label": "main.py",
+     "source_file": "backend/main.py",
+     "source_location": "L1"
+    },
+    {
+     "community": 2,
+     "degree": 31,
+     "id": "backend_graph_engine",
+     "label": "graph_engine.py",
+     "source_file": "backend/graph_engine.py",
+     "source_location": "L1"
+    },
+    {
+     "community": 3,
+     "degree": 24,
+     "id": "frontend_js_dom",
+     "label": "$",
+     "source_file": "frontend/js/dom.js",
+     "source_location": "L5"
+    },
+    {
+     "community": 4,
+     "degree": 22,
+     "id": "tests_test_api",
+     "label": "test_api.py",
+     "source_file": "tests/test_api.py",
+     "source_location": "L1"
+    },
+    {
+     "community": 1,
+     "degree": 21,
+     "id": "streamlit_app_app",
+     "label": "app.py",
+     "source_file": "streamlit_app/app.py",
+     "source_location": "L1"
+    }
+   ],
+   "stats": {
+    "communities": 13,
+    "confidence": {
+     "EXTRACTED": 594,
+     "INFERRED": 15
+    },
+    "edges": 609,
+    "files": 26,
+    "nodes": 311,
+    "relations": {
+     "calls": 168,
+     "contains": 126,
+     "defines": 2,
+     "imports": 85,
+     "imports_from": 58,
+     "indirect_call": 4,
+     "inherits": 5,
+     "method": 8,
+     "rationale_for": 75,
+     "references": 72,
+     "uses": 6
+    }
+   }
+  },
+  "model": "gemma-4-26b-a4b-it",
+  "repo": ".",
+  "report_md": "# Graph Report - gemmagraph-bug-hunter  (2026-10-31)\n\n## Corpus Check\n- cluster-only mode \u2014 file stats not available\n\n## Summary\n- 311 nodes \u00b7 609 edges \u00b7 13 communities (9 shown, 4 thin omitted)\n- Extraction: 98% EXTRACTED \u00b7 2% INFERRED \u00b7 0% AMBIGUOUS \u00b7 INFERRED: 15 edges (avg confidence: 0.89)\n- Token cost: 0 input \u00b7 0 output\n\n## Graph Freshness\n- Built from commit: `c13d86a4`\n- Run `git rev-parse HEAD` and compare to check if the graph is stale.\n- Run `graphify update .` after code changes (no API cost).\n\n## Community Hubs (Navigation)\n- Community 0\n- Community 1\n- Community 2\n- Community 3\n- Community 4\n- Community 5\n- Community 6\n- Community 7\n- Community 8\n- Community 9\n- Community 10\n- Community 11\n\n## God Nodes (most connected - your core abstractions)\n1. `$` - 24 edges\n2. `esc()` - 16 edges\n3. `analyze_repo_graph()` - 15 edges\n4. `ApiClient` - 12 edges\n5. `scan()` - 12 edges\n6. `validate_target()` - 11 edges\n7. `ApiError` - 10 edges\n8. `GraphEngineError` - 10 edges\n9. `main()` - 10 edges\n10. `drawGraph()` - 10 edges\n\n## Surprising Connections (you probably didn't know these)\n- `test_validate_target_accepts_only_allowlist()` --calls--> `validate_target()`  [INFERRED]\n  tests/test_api.py \u2192 backend/graph_engine.py\n- `test_unexpected_errors_return_clean_json()` --indirect_call--> `main()`  [INFERRED]\n  tests/test_api.py \u2192 streamlit_app/app.py\n- `test_file_graph_to_dot_marks_cycles_and_quotes_ids()` --calls--> `file_graph_to_dot()`  [EXTRACTED]\n  tests/test_streamlit_app.py \u2192 streamlit_app/components/topology.py\n- `test_summarize_graph_finds_cycle_god_node_and_dead_code()` --calls--> `summarize_graph()`  [INFERRED]\n  tests/test_api.py \u2192 backend/graph_engine.py\n- `main()` --uses--> `GraphEngineError`  [INFERRED]\n  backend/cli.py \u2192 backend/graph_engine.py\n\n## Import Cycles\n- 2-file cycle: `demo_buggy_app/auth.py -> demo_buggy_app/db.py -> demo_buggy_app/auth.py`\n\n## Communities (13 total, 4 thin omitted)\n\n### Community 0 - \"Community 0\"\nCohesion: 0.05\nNodes (17): _error(), _get_cached(), get_scan(), _graphify_status(), health(), http_exception_handler(), index(), invalid_target_handler() (+9 more)\n\n### Community 1 - \"Community 1\"\nCohesion: 0.08\nNodes (14): ApiClient, ApiError, main(), run_scan(), scan_header(), sidebar(), render_audit(), render_hotspot() (+6 more)\n\n### Community 2 - \"Community 2\"\nCohesion: 0.07\nNodes (16): analyze_repo_graph(), _clone_repo(), _find_cycle_path(), _fingerprint(), _git_head(), GraphEngineError, _graphify_cmd(), InvalidTargetError (+8 more)\n\n### Community 3 - \"Community 3\"\nCohesion: 0.16\nNodes (35): auditDiagram(), getHealth(), request(), scanRepo(), $, badge(), empty(), esc() (+27 more)\n\n### Community 4 - \"Community 4\"\nCohesion: 0.08\nNodes (5): demo_scan(), test_dashboard_assets_are_served_and_cacheable(), test_malicious_scan_targets_are_rejected(), test_summarize_graph_finds_cycle_god_node_and_dead_code(), test_unexpected_errors_return_clean_json()\n\n### Community 5 - \"Community 5\"\nCohesion: 0.09\nNodes (4): main(), _render_markdown(), fake_backend(), test_file_graph_to_dot_marks_cycles_and_quotes_ids()\n\n### Community 6 - \"Community 6\"\nCohesion: 0.16\nNodes (6): audit_architecture_diagram(), audit_code_graph(), _compact_summary(), _extract_json(), _generate(), get_client()\n\n### Community 7 - \"Community 7\"\nCohesion: 0.27\nNodes (7): admin_backup(), hash_password(), login(), backup_database(), create_user(), find_user(), get_connection()\n\n### Community 10 - \"Community 10\"\nCohesion: 0.83\nNodes (3): fail(), log(), deploy_cloudways.sh script\n\n## Knowledge Gaps\n- **4 thin communities (<3 nodes) omitted from report** \u2014 run `graphify query` to explore isolated nodes.\n\n## Suggested Questions\n_Questions this graph is uniquely positioned to answer:_\n\n- **Why does `analyze_repo_graph()` connect `Community 2` to `Community 0`, `Community 5`?**\n  _High betweenness centrality (0.029) - this node is a cross-community bridge._\n- **Are the 2 inferred relationships involving `ApiClient` (e.g. with `run_scan()` and `render_vision()`) actually correct?**\n  _`ApiClient` has 2 INFERRED edges - model-reasoned connections that need verification._\n- **Should `Community 0` be split into smaller, more focused modules?**\n  _Cohesion score 0.05222734254992319 - nodes in this community are weakly interconnected._\n- **Why does `CachedStaticFiles` connect `Community 8` to `Community 0`?**\n  _High betweenness centrality (0.026) - this node is a cross-community bridge._\n- **Should `Community 1` be split into smaller, more focused modules?**\n  _Cohesion score 0.07686932215234102 - nodes in this community are weakly interconnected._\n- **Should `Community 2` be split into smaller, more focused modules?**\n  _Cohesion score 0.07149758454106281 - nodes in this community are weakly interconnected._\n- **Should `Community 4` be split into smaller, more focused modules?**\n  _Cohesion score 0.07692307692307693 - nodes in this community are weakly interconnected._",
+  "scan_id": "3a52ce780950",
+  "scanned_at": 1793432112,
+  "timings_ms": {
+   "gemma": 16339.6,
+   "graphify": 5447.5
   }
  }
 }
