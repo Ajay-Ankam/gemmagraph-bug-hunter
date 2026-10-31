@@ -1,0 +1,786 @@
+{
+ "1966f1a98572": {
+  "audit": {
+   "circular_dependencies": [
+    {
+     "cycle": [
+      "auth.py",
+      "db.py",
+      "auth.py"
+     ],
+     "fix": "Remove the import of 'hash_password' from 'db.py' and pass the hashed password as an argument to 'create_user' instead.",
+     "impact": "Prevents clean module separation and can cause runtime errors during initialization."
+    }
+   ],
+   "dead_code": [
+    {
+     "confidence": "high",
+     "file": "legacy_utils.py",
+     "reason": "Explicitly marked as unused in source comments.",
+     "symbol": "load_legacy_session()"
+    },
+    {
+     "confidence": "high",
+     "file": "legacy_utils.py",
+     "reason": "Replaced by auth.login in v2.",
+     "symbol": "old_password_check()"
+    },
+    {
+     "confidence": "medium",
+     "file": "legacy_utils.py",
+     "reason": "No incoming edges in the dependency graph.",
+     "symbol": "format_username()"
+    }
+   ],
+   "git_diff_patch": "--- a/db.py\n+++ b/db.py\n@@ -20,7 +20,7 @@\n def find_user(username):\n     conn = get_connection()\n     cursor = conn.cursor()\n-    # BUG (SQL injection): user input is formatted straight into the query.\n-    query = f\"SELECT id, username, password_hash FROM users WHERE username = '{username}'\"\n-    cursor.execute(query)\n+    # Fixed SQL injection by using parameterized queries\n+    query = \"SELECT id, username, password_hash FROM users WHERE username = ?\"\n+    cursor.execute(query, (username,))\n     row = cursor.fetchone()\n     conn.close()",
+   "health_score": 20,
+   "model": "gemma-4-26b-a4b-it",
+   "prioritized_fixes": [
+    {
+     "file": "db.py",
+     "rank": 1,
+     "reason": "Highest severity vulnerability that directly compromises the primary data store and authentication flow.",
+     "title": "Fix SQL Injection in find_user"
+    },
+    {
+     "file": "db.py",
+     "rank": 2,
+     "reason": "Allows full system compromise via shell execution.",
+     "title": "Fix Command Injection in backup_database"
+    },
+    {
+     "file": "db.py",
+     "rank": 3,
+     "reason": "Fundamental architectural flaw causing instability.",
+     "title": "Break Circular Dependency"
+    },
+    {
+     "file": "auth.py",
+     "rank": 4,
+     "reason": "Prevents credential theft via rainbow tables.",
+     "title": "Upgrade Password Hashing"
+    },
+    {
+     "file": "legacy_utils.py",
+     "rank": 5,
+     "reason": "Eliminates a critical RCE vector in legacy code.",
+     "title": "Remove Unsafe Pickle Usage"
+    }
+   ],
+   "security_hotspots": [
+    {
+     "blast_radius": [
+      "auth.py:login()"
+     ],
+     "category": "injection",
+     "explanation": "SQL injection via f-string formatting of 'username' allows attackers to bypass authentication or dump the database.",
+     "file": "db.py",
+     "line": 23,
+     "severity": "critical"
+    },
+    {
+     "blast_radius": [
+      "auth.py:admin_backup()"
+     ],
+     "category": "injection",
+     "explanation": "Command injection via 'subprocess.run' with 'shell=True' allows arbitrary code execution through the 'destination' parameter.",
+     "file": "db.py",
+     "line": 41,
+     "severity": "critical"
+    },
+    {
+     "blast_radius": [],
+     "category": "unsafe deserialization",
+     "explanation": "Using 'pickle.loads' on untrusted data allows for arbitrary code execution.",
+     "file": "legacy_utils.py",
+     "line": 16,
+     "severity": "critical"
+    },
+    {
+     "blast_radius": [],
+     "category": "secrets",
+     "explanation": "Hardcoded secret key used for cryptographic operations is easily discoverable.",
+     "file": "auth.py",
+     "line": 11,
+     "severity": "high"
+    },
+    {
+     "blast_radius": [
+      "db.py:create_user()",
+      "auth.py:login()"
+     ],
+     "category": "weak cryptography",
+     "explanation": "MD5 is cryptographically broken and lacks a salt, making it vulnerable to rainbow table attacks.",
+     "file": "auth.py",
+     "line": 16,
+     "severity": "high"
+    }
+   ],
+   "summary": "The application suffers from critical architectural flaws including circular dependencies and severe security vulnerabilities. The presence of SQL injection, command injection, and unsafe deserialization makes the system highly exploitable.",
+   "usage": {
+    "input_tokens": 3641,
+    "output_tokens": 1212,
+    "thinking_tokens": 0
+   }
+  },
+  "critical_files": [
+   "db.py",
+   "auth.py",
+   "legacy_utils.py"
+  ],
+  "graph_summary": {
+   "circular_dependencies": [
+    {
+     "cycle": [
+      "auth.py",
+      "db.py",
+      "auth.py"
+     ],
+     "evidence": [
+      {
+       "confidence": "EXTRACTED",
+       "from": "admin_backup()",
+       "location": "auth.py:L28",
+       "relation": "calls",
+       "to": "backup_database()"
+      },
+      {
+       "confidence": "EXTRACTED",
+       "from": "create_user()",
+       "location": "db.py:L34",
+       "relation": "calls",
+       "to": "hash_password()"
+      }
+     ],
+     "files": [
+      "auth.py",
+      "db.py"
+     ],
+     "size": 2
+    }
+   ],
+   "critical_files": [
+    "db.py",
+    "auth.py",
+    "legacy_utils.py"
+   ],
+   "dead_code": {
+    "isolated_count": 0,
+    "isolated_nodes": [],
+    "unreferenced_callables": [
+     {
+      "community": 0,
+      "degree": 2,
+      "id": "auth_admin_backup",
+      "label": "admin_backup()",
+      "source_file": "auth.py",
+      "source_location": "L26"
+     },
+     {
+      "community": 0,
+      "degree": 3,
+      "id": "auth_login",
+      "label": "login()",
+      "source_file": "auth.py",
+      "source_location": "L19"
+     },
+     {
+      "community": 1,
+      "degree": 1,
+      "id": "legacy_utils_format_username",
+      "label": "format_username()",
+      "source_file": "legacy_utils.py",
+      "source_location": "L9"
+     },
+     {
+      "community": 1,
+      "degree": 2,
+      "id": "legacy_utils_load_legacy_session",
+      "label": "load_legacy_session()",
+      "source_file": "legacy_utils.py",
+      "source_location": "L13"
+     },
+     {
+      "community": 1,
+      "degree": 1,
+      "id": "legacy_utils_old_password_check",
+      "label": "old_password_check()",
+      "source_file": "legacy_utils.py",
+      "source_location": "L19"
+     },
+     {
+      "community": 2,
+      "degree": 3,
+      "id": "db_create_user",
+      "label": "create_user()",
+      "source_file": "db.py",
+      "source_location": "L30"
+     }
+    ],
+    "unreferenced_count": 6
+   },
+   "dense_clusters": [
+    {
+     "community": 2,
+     "density": 0.15,
+     "files": [
+      "db.py"
+     ],
+     "internal_edges": 3,
+     "name": "Community 2",
+     "size": 5
+    }
+   ],
+   "file_graph": {
+    "edges": [
+     {
+      "in_cycle": true,
+      "source": "auth.py",
+      "target": "db.py"
+     },
+     {
+      "in_cycle": true,
+      "source": "db.py",
+      "target": "auth.py"
+     }
+    ],
+    "nodes": [
+     {
+      "degree": 2,
+      "id": "auth.py",
+      "in_cycle": true
+     },
+     {
+      "degree": 2,
+      "id": "db.py",
+      "in_cycle": true
+     }
+    ]
+   },
+   "god_nodes": [
+    {
+     "community": 2,
+     "degree": 9,
+     "id": "db",
+     "label": "db.py",
+     "source_file": "db.py",
+     "source_location": "L1"
+    },
+    {
+     "community": 0,
+     "degree": 8,
+     "id": "auth",
+     "label": "auth.py",
+     "source_file": "auth.py",
+     "source_location": "L1"
+    },
+    {
+     "community": 0,
+     "degree": 5,
+     "id": "auth_hash_password",
+     "label": "hash_password()",
+     "source_file": "auth.py",
+     "source_location": "L14"
+    },
+    {
+     "community": 1,
+     "degree": 5,
+     "id": "legacy_utils",
+     "label": "legacy_utils.py",
+     "source_file": "legacy_utils.py",
+     "source_location": "L1"
+    },
+    {
+     "community": 0,
+     "degree": 4,
+     "id": "db_backup_database",
+     "label": "backup_database()",
+     "source_file": "db.py",
+     "source_location": "L40"
+    }
+   ],
+   "stats": {
+    "communities": 3,
+    "confidence": {
+     "EXTRACTED": 31
+    },
+    "edges": 31,
+    "files": 3,
+    "nodes": 20,
+    "relations": {
+     "calls": 10,
+     "contains": 10,
+     "imports": 7,
+     "imports_from": 1,
+     "rationale_for": 3
+    }
+   }
+  },
+  "model": "gemma-4-26b-a4b-it",
+  "repo": "demo_buggy_app",
+  "report_md": "# Graph Report - demo_buggy_app  (2026-10-31)\n\n## Corpus Check\n- cluster-only mode \u2014 file stats not available\n\n## Summary\n- 20 nodes \u00b7 31 edges \u00b7 3 communities (1 shown, 2 thin omitted)\n- Extraction: 100% EXTRACTED \u00b7 0% INFERRED \u00b7 0% AMBIGUOUS\n- Token cost: 0 input \u00b7 0 output\n\n## Community Hubs (Navigation)\n- Community 0\n- Community 1\n- Community 2\n\n## God Nodes (most connected - your core abstractions)\n1. `hash_password()` - 5 edges\n2. `backup_database()` - 4 edges\n3. `find_user()` - 4 edges\n4. `get_connection()` - 4 edges\n5. `login()` - 3 edges\n6. `create_user()` - 3 edges\n7. `admin_backup()` - 2 edges\n8. `load_legacy_session()` - 2 edges\n9. `Authentication for the demo app. DELIBERATELY BUGGY - used as a GemmaGraph Bug\u2026` - 1 edges\n10. `Legacy helpers left over from v1. DELIBERATELY BUGGY - used as a GemmaGraph Bug\u2026` - 1 edges\n\n## Surprising Connections (you probably didn't know these)\n- `create_user()` --calls--> `hash_password()`  [EXTRACTED]\n  db.py \u2192 auth.py\n- `admin_backup()` --calls--> `backup_database()`  [EXTRACTED]\n  auth.py \u2192 db.py\n- `login()` --calls--> `find_user()`  [EXTRACTED]\n  auth.py \u2192 db.py\n\n## Import Cycles\n- 2-file cycle: `auth.py -> db.py -> auth.py`\n\n## Communities (3 total, 2 thin omitted)\n\n### Community 0 - \"Community 0\"\nCohesion: 0.33\nNodes (5): admin_backup(), hash_password(), login(), backup_database(), find_user()\n\n## Knowledge Gaps\n- **2 thin communities (<3 nodes) omitted from report** \u2014 run `graphify query` to explore isolated nodes.\n\n## Suggested Questions\n_Questions this graph is uniquely positioned to answer:_\n\n- **Why does `hash_password()` connect `Community 0` to `Community 2`?**\n  _High betweenness centrality (0.043) - this node is a cross-community bridge._\n- **Why does `backup_database()` connect `Community 0` to `Community 2`?**\n  _High betweenness centrality (0.028) - this node is a cross-community bridge._\n- **Why does `find_user()` connect `Community 0` to `Community 2`?**\n  _High betweenness centrality (0.023) - this node is a cross-community bridge._",
+  "scan_id": "1966f1a98572",
+  "scanned_at": 1793429427,
+  "timings_ms": {
+   "gemma": 29999.5,
+   "graphify": 3442.8
+  }
+ },
+ "3a52ce780950": {
+  "audit": {
+   "circular_dependencies": [
+    {
+     "cycle": [
+      "demo_buggy_app/auth.py",
+      "demo_buggy_app/db.py",
+      "demo_buggy_app/auth.py"
+     ],
+     "fix": "Move the shared logic (like password hashing or user models) into a third, independent utility module that both auth and db can import.",
+     "impact": "Prevents clean module initialization and makes unit testing individual components impossible due to tight coupling."
+    }
+   ],
+   "dead_code": [
+    {
+     "confidence": "medium",
+     "file": "tests/test_api.py",
+     "reason": "It is a pytest fixture used by other tests, but the graph identifies it as an unreferenced callable in the context of the main application flow.",
+     "symbol": "demo_scan()"
+    },
+    {
+     "confidence": "low",
+     "file": "backend/main.py",
+     "reason": "Listed as unreferenced in the graph analysis.",
+     "symbol": "index()"
+    },
+    {
+     "confidence": "high",
+     "file": "demo_buggy_app/legacy_utils.py",
+     "reason": "Identified as unreferenced in the graph.",
+     "symbol": "format_username()"
+    },
+    {
+     "confidence": "high",
+     "file": "demo_buggy_app/legacy_utils.py",
+     "reason": "Identified as unreferenced in the graph.",
+     "symbol": "load_legacy_session()"
+    },
+    {
+     "confidence": "high",
+     "file": "demo_buggy_app/legacy_utils.py",
+     "reason": "Identified as unreferenced in the graph.",
+     "symbol": "old_password_check()"
+    },
+    {
+     "confidence": "high",
+     "file": "tests/test_api.py",
+     "reason": "Identified as unreferenced in the graph.",
+     "symbol": "node()"
+    }
+   ],
+   "git_diff_patch": "",
+   "health_score": 82,
+   "model": "gemma-4-26b-a4b-it",
+   "prioritized_fixes": [
+    {
+     "file": "demo_buggy_app/auth.py",
+     "rank": 1,
+     "reason": "Circular dependencies cause runtime instability and architectural rot.",
+     "title": "Break circular dependency in demo_buggy_app"
+    }
+   ],
+   "security_hotspots": [],
+   "summary": "The architecture is generally robust with strong input validation in the graph engine, but it contains a critical circular dependency in the demo application. The core backend uses a well-defined security boundary for target validation, though some dead code exists in the test suite and legacy utilities.",
+   "usage": {
+    "input_tokens": 10494,
+    "output_tokens": 659,
+    "thinking_tokens": 0
+   }
+  },
+  "critical_files": [
+   "backend/main.py",
+   "backend/graph_engine.py",
+   "tests/test_api.py"
+  ],
+  "graph_summary": {
+   "circular_dependencies": [
+    {
+     "cycle": [
+      "demo_buggy_app/auth.py",
+      "demo_buggy_app/db.py",
+      "demo_buggy_app/auth.py"
+     ],
+     "evidence": [
+      {
+       "confidence": "EXTRACTED",
+       "from": "admin_backup()",
+       "location": "demo_buggy_app/auth.py:L28",
+       "relation": "calls",
+       "to": "backup_database()"
+      },
+      {
+       "confidence": "EXTRACTED",
+       "from": "create_user()",
+       "location": "demo_buggy_app/db.py:L34",
+       "relation": "calls",
+       "to": "hash_password()"
+      }
+     ],
+     "files": [
+      "demo_buggy_app/auth.py",
+      "demo_buggy_app/db.py"
+     ],
+     "size": 2
+    }
+   ],
+   "critical_files": [
+    "backend/main.py",
+    "backend/graph_engine.py",
+    "tests/test_api.py",
+    "backend/cli.py",
+    "backend/gemma_agent.py"
+   ],
+   "dead_code": {
+    "isolated_count": 0,
+    "isolated_nodes": [],
+    "unreferenced_callables": [
+     {
+      "community": 2,
+      "degree": 3,
+      "id": "tests_test_api_demo_scan",
+      "label": "demo_scan()",
+      "source_file": "tests/test_api.py",
+      "source_location": "L24"
+     },
+     {
+      "community": 1,
+      "degree": 4,
+      "id": "backend_main_index",
+      "label": "index()",
+      "source_file": "backend/main.py",
+      "source_location": "L205"
+     },
+     {
+      "community": 1,
+      "degree": 5,
+      "id": "backend_main_get_scan",
+      "label": "get_scan()",
+      "source_file": "backend/main.py",
+      "source_location": "L307"
+     },
+     {
+      "community": 1,
+      "degree": 9,
+      "id": "backend_main_health",
+      "label": "health()",
+      "source_file": "backend/main.py",
+      "source_location": "L222"
+     },
+     {
+      "community": 1,
+      "degree": 8,
+      "id": "backend_main_multimodal_audit",
+      "label": "multimodal_audit()",
+      "source_file": "backend/main.py",
+      "source_location": "L333"
+     },
+     {
+      "community": 4,
+      "degree": 7,
+      "id": "backend_main_http_exception_handler",
+      "label": "http_exception_handler()",
+      "source_file": "backend/main.py",
+      "source_location": "L102"
+     },
+     {
+      "community": 4,
+      "degree": 7,
+      "id": "backend_main_invalid_target_handler",
+      "label": "invalid_target_handler()",
+      "source_file": "backend/main.py",
+      "source_location": "L119"
+     },
+     {
+      "community": 4,
+      "degree": 7,
+      "id": "backend_main_unhandled_exception_handler",
+      "label": "unhandled_exception_handler()",
+      "source_file": "backend/main.py",
+      "source_location": "L125"
+     },
+     {
+      "community": 4,
+      "degree": 7,
+      "id": "backend_main_validation_exception_handler",
+      "label": "validation_exception_handler()",
+      "source_file": "backend/main.py",
+      "source_location": "L108"
+     },
+     {
+      "community": 6,
+      "degree": 15,
+      "id": "backend_main_scan",
+      "label": "scan()",
+      "source_file": "backend/main.py",
+      "source_location": "L250"
+     },
+     {
+      "community": 0,
+      "degree": 1,
+      "id": "backend_graph_engine_summarize_graph_node_view",
+      "label": "node_view()",
+      "source_file": "backend/graph_engine.py",
+      "source_location": "L369"
+     },
+     {
+      "community": 0,
+      "degree": 1,
+      "id": "tests_test_api_test_summarize_graph_finds_cycle_god_node_and_dead_code_edge",
+      "label": "edge()",
+      "source_file": "tests/test_api.py",
+      "source_location": "L191"
+     },
+     {
+      "community": 0,
+      "degree": 1,
+      "id": "tests_test_api_test_summarize_graph_finds_cycle_god_node_and_dead_code_node",
+      "label": "node()",
+      "source_file": "tests/test_api.py",
+      "source_location": "L188"
+     },
+     {
+      "community": 3,
+      "degree": 5,
+      "id": "backend_gemma_agent_audit_architecture_diagram",
+      "label": "audit_architecture_diagram()",
+      "source_file": "backend/gemma_agent.py",
+      "source_location": "L212"
+     },
+     {
+      "community": 5,
+      "degree": 2,
+      "id": "demo_buggy_app_auth_admin_backup",
+      "label": "admin_backup()",
+      "source_file": "demo_buggy_app/auth.py",
+      "source_location": "L26"
+     },
+     {
+      "community": 5,
+      "degree": 3,
+      "id": "demo_buggy_app_auth_login",
+      "label": "login()",
+      "source_file": "demo_buggy_app/auth.py",
+      "source_location": "L19"
+     },
+     {
+      "community": 5,
+      "degree": 3,
+      "id": "demo_buggy_app_db_create_user",
+      "label": "create_user()",
+      "source_file": "demo_buggy_app/db.py",
+      "source_location": "L30"
+     },
+     {
+      "community": 6,
+      "degree": 4,
+      "id": "backend_main_scanrequest_check_target",
+      "label": "._check_target()",
+      "source_file": "backend/main.py",
+      "source_location": "L191"
+     },
+     {
+      "community": 8,
+      "degree": 1,
+      "id": "demo_buggy_app_legacy_utils_format_username",
+      "label": "format_username()",
+      "source_file": "demo_buggy_app/legacy_utils.py",
+      "source_location": "L9"
+     },
+     {
+      "community": 8,
+      "degree": 2,
+      "id": "demo_buggy_app_legacy_utils_load_legacy_session",
+      "label": "load_legacy_session()",
+      "source_file": "demo_buggy_app/legacy_utils.py",
+      "source_location": "L13"
+     },
+     {
+      "community": 8,
+      "degree": 1,
+      "id": "demo_buggy_app_legacy_utils_old_password_check",
+      "label": "old_password_check()",
+      "source_file": "demo_buggy_app/legacy_utils.py",
+      "source_location": "L19"
+     }
+    ],
+    "unreferenced_count": 21
+   },
+   "dense_clusters": [
+    {
+     "community": 9,
+     "density": 0.167,
+     "files": [
+      "deploy_cloudways.sh"
+     ],
+     "internal_edges": 2,
+     "name": "Community 9",
+     "size": 4
+    }
+   ],
+   "file_graph": {
+    "edges": [
+     {
+      "in_cycle": false,
+      "source": "backend/cli.py",
+      "target": "backend/graph_engine.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "backend/main.py",
+      "target": "backend/gemma_agent.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "backend/main.py",
+      "target": "backend/graph_engine.py"
+     },
+     {
+      "in_cycle": true,
+      "source": "demo_buggy_app/auth.py",
+      "target": "demo_buggy_app/db.py"
+     },
+     {
+      "in_cycle": true,
+      "source": "demo_buggy_app/db.py",
+      "target": "demo_buggy_app/auth.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "tests/test_api.py",
+      "target": "backend/cli.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "tests/test_api.py",
+      "target": "backend/graph_engine.py"
+     },
+     {
+      "in_cycle": false,
+      "source": "tests/test_api.py",
+      "target": "backend/main.py"
+     }
+    ],
+    "nodes": [
+     {
+      "degree": 2,
+      "id": "backend/cli.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 1,
+      "id": "backend/gemma_agent.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 3,
+      "id": "backend/graph_engine.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 3,
+      "id": "backend/main.py",
+      "in_cycle": false
+     },
+     {
+      "degree": 2,
+      "id": "demo_buggy_app/auth.py",
+      "in_cycle": true
+     },
+     {
+      "degree": 2,
+      "id": "demo_buggy_app/db.py",
+      "in_cycle": true
+     },
+     {
+      "degree": 3,
+      "id": "tests/test_api.py",
+      "in_cycle": false
+     }
+    ]
+   },
+   "god_nodes": [
+    {
+     "community": 1,
+     "degree": 45,
+     "id": "backend_main",
+     "label": "main.py",
+     "source_file": "backend/main.py",
+     "source_location": "L1"
+    },
+    {
+     "community": 0,
+     "degree": 31,
+     "id": "backend_graph_engine",
+     "label": "graph_engine.py",
+     "source_file": "backend/graph_engine.py",
+     "source_location": "L1"
+    },
+    {
+     "community": 2,
+     "degree": 20,
+     "id": "tests_test_api",
+     "label": "test_api.py",
+     "source_file": "tests/test_api.py",
+     "source_location": "L1"
+    },
+    {
+     "community": 6,
+     "degree": 15,
+     "id": "backend_main_scan",
+     "label": "scan()",
+     "source_file": "backend/main.py",
+     "source_location": "L250"
+    },
+    {
+     "community": 0,
+     "degree": 15,
+     "id": "backend_graph_engine_analyze_repo_graph",
+     "label": "analyze_repo_graph()",
+     "source_file": "backend/graph_engine.py",
+     "source_location": "L544"
+    }
+   ],
+   "stats": {
+    "communities": 11,
+    "confidence": {
+     "EXTRACTED": 326,
+     "INFERRED": 11
+    },
+    "edges": 337,
+    "files": 11,
+    "nodes": 192,
+    "relations": {
+     "calls": 76,
+     "contains": 70,
+     "defines": 2,
+     "imports": 42,
+     "imports_from": 27,
+     "indirect_call": 2,
+     "inherits": 3,
+     "method": 1,
+     "rationale_for": 51,
+     "references": 56,
+     "uses": 7
+    }
+   }
+  },
+  "model": "gemma-4-26b-a4b-it",
+  "repo": ".",
+  "report_md": "# Graph Report - gemmagraph-bug-hunter  (2026-10-31)\n\n## Corpus Check\n- cluster-only mode \u2014 file stats not available\n\n## Summary\n- 192 nodes \u00b7 337 edges \u00b7 11 communities (8 shown, 3 thin omitted)\n- Extraction: 97% EXTRACTED \u00b7 3% INFERRED \u00b7 0% AMBIGUOUS \u00b7 INFERRED: 11 edges (avg confidence: 0.91)\n- Token cost: 0 input \u00b7 0 output\n\n## Community Hubs (Navigation)\n- Community 0\n- Community 1\n- Community 2\n- Community 3\n- Community 4\n- Community 5\n- Community 6\n- Community 7\n- Community 8\n- Community 9\n- Community 10\n\n## God Nodes (most connected - your core abstractions)\n1. `scan()` - 15 edges\n2. `analyze_repo_graph()` - 15 edges\n3. `GraphEngineError` - 11 edges\n4. `validate_target()` - 11 edges\n5. `InvalidTargetError` - 9 edges\n6. `health()` - 9 edges\n7. `summarize_graph()` - 9 edges\n8. `main()` - 9 edges\n9. `ScanTarget` - 8 edges\n10. `multimodal_audit()` - 8 edges\n\n## Surprising Connections (you probably didn't know these)\n- `test_unexpected_errors_return_clean_json()` --indirect_call--> `main()`  [INFERRED]\n  tests/test_api.py \u2192 backend/cli.py\n- `test_validate_target_accepts_only_allowlist()` --uses--> `InvalidTargetError`  [INFERRED]\n  tests/test_api.py \u2192 backend/graph_engine.py\n- `test_validate_target_accepts_only_allowlist()` --calls--> `validate_target()`  [INFERRED]\n  tests/test_api.py \u2192 backend/graph_engine.py\n- `test_summarize_graph_finds_cycle_god_node_and_dead_code()` --calls--> `summarize_graph()`  [INFERRED]\n  tests/test_api.py \u2192 backend/graph_engine.py\n- `main()` --uses--> `GraphEngineError`  [INFERRED]\n  backend/cli.py \u2192 backend/graph_engine.py\n\n## Import Cycles\n- 2-file cycle: `demo_buggy_app/auth.py -> demo_buggy_app/db.py -> demo_buggy_app/auth.py`\n\n## Communities (11 total, 3 thin omitted)\n\n### Community 0 - \"Community 0\"\nCohesion: 0.08\nNodes (13): analyze_repo_graph(), _clone_repo(), _find_cycle_path(), _fingerprint(), _git_head(), GraphEngineError, _graphify_cmd(), read_critical_files() (+5 more)\n\n### Community 1 - \"Community 1\"\nCohesion: 0.08\nNodes (9): _get_cached(), get_scan(), _graphify_status(), health(), index(), _load_cache(), multimodal_audit(), _store() (+1 more)\n\n### Community 2 - \"Community 2\"\nCohesion: 0.09\nNodes (3): demo_scan(), test_malicious_scan_targets_are_rejected(), test_unexpected_errors_return_clean_json()\n\n### Community 3 - \"Community 3\"\nCohesion: 0.16\nNodes (6): audit_architecture_diagram(), audit_code_graph(), _compact_summary(), _extract_json(), _generate(), get_client()\n\n### Community 4 - \"Community 4\"\nCohesion: 0.21\nNodes (5): _error(), http_exception_handler(), invalid_target_handler(), unhandled_exception_handler(), validation_exception_handler()\n\n### Community 5 - \"Community 5\"\nCohesion: 0.23\nNodes (8): _scan_id(), admin_backup(), hash_password(), login(), backup_database(), create_user(), find_user(), get_connection()\n\n### Community 6 - \"Community 6\"\nCohesion: 0.18\nNodes (6): InvalidTargetError, ScanTarget, validate_target(), scan(), ScanRequest, test_validate_target_accepts_only_allowlist()\n\n### Community 9 - \"Community 9\"\nCohesion: 0.83\nNodes (3): fail(), log(), deploy_cloudways.sh script\n\n## Knowledge Gaps\n- **3 thin communities (<3 nodes) omitted from report** \u2014 run `graphify query` to explore isolated nodes.\n\n## Suggested Questions\n_Questions this graph is uniquely positioned to answer:_\n\n- **Why does `analyze_repo_graph()` connect `Community 0` to `Community 1`, `Community 6`, `Community 7`?**\n  _High betweenness centrality (0.055) - this node is a cross-community bridge._\n- **Are the 3 inferred relationships involving `scan()` (e.g. with `GraphEngineError` and `InvalidTargetError`) actually correct?**\n  _`scan()` has 3 INFERRED edges - model-reasoned connections that need verification._\n- **Should `Community 0` be split into smaller, more focused modules?**\n  _Cohesion score 0.08097165991902834 - nodes in this community are weakly interconnected._\n- **Why does `scan()` connect `Community 6` to `Community 0`, `Community 1`, `Community 3`, `Community 4`, `Community 5`?**\n  _High betweenness centrality (0.050) - this node is a cross-community bridge._\n- **Are the 2 inferred relationships involving `GraphEngineError` (e.g. with `main()` and `scan()`) actually correct?**\n  _`GraphEngineError` has 2 INFERRED edges - model-reasoned connections that need verification._\n- **Should `Community 1` be split into smaller, more focused modules?**\n  _Cohesion score 0.07823613086770982 - nodes in this community are weakly interconnected._\n- **Why does `validate_target()` connect `Community 6` to `Community 0`, `Community 1`, `Community 7`?**\n  _High betweenness centrality (0.041) - this node is a cross-community bridge._",
+  "scan_id": "3a52ce780950",
+  "scanned_at": 1793430403,
+  "timings_ms": {
+   "gemma": 16604.8,
+   "graphify": 3020.5
+  }
+ }
+}

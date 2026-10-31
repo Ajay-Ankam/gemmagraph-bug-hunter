@@ -1,0 +1,7 @@
+# Cloudways: copy to your application's public_html/.htaccess.
+# Request path: Nginx -> Varnish (caches GET responses with Cache-Control: public)
+#               -> Apache (this file) -> Uvicorn on 127.0.0.1:8000 (PM2).
+RewriteEngine On
+RewriteCond %{HTTP:Upgrade} !=websocket [NC]
+RewriteRule ^(.*)$ http://127.0.0.1:8000/$1 [P,L]
+RequestHeader set X-Forwarded-Proto "https" env=HTTPS

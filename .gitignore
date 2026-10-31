@@ -1,0 +1,41 @@
+# ── Secrets: NEVER commit API keys ─────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ── Python ─────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# ── Runtime / temp ─────────────────────────────────────────────
+# Cloned repos live in the OS temp dir (/tmp/gemmagraph_repos), never in the repo.
+gemmagraph_repos/
+*.tmp
+logs/
+*.log
+node_modules/
+users.db
+
+# ── Graphify output ────────────────────────────────────────────
+# Ignore every graphify-out/ (demo app, cloned repos, caches)...
+**/graphify-out/
+# ...except our own root knowledge graph, published for judges.
+!/graphify-out/
+/graphify-out/*
+!/graphify-out/GRAPH_REPORT.md
+!/graphify-out/graph.json
+
+# ── Local tool settings ────────────────────────────────────────
+.claude/settings.local.json
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
